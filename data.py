@@ -11,3 +11,17 @@ def pack_example(message, options):
         tokens.append("[SEP]")
 
     return tokens, decision_positions
+
+def build_vocab(token_sequences):
+    vocab = {"[PAD]": 0, "[UNK]":1, "[SEP]": 2, "[DECIDE]": 3}
+
+    for tokens in token_sequences:
+        for token in tokens:
+            if token not in vocab:
+                vocab[token] = len(vocab)
+
+    return vocab
+
+def encode_tokens(tokens, vocab):
+    unknown_id = vocab["[UNK]"]
+    return [vocab.get(token, unknown_id) for token in tokens]
