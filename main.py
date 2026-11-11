@@ -1,10 +1,15 @@
-import mlx.core as mx
+from data import pack_example
 
 def main():
-    scores = mx.array([1.0, 2.0, 3.0])
-    probabilities = mx.softmax(scores, axis=0)
-    print(probabilities.tolist())
+    message = "Where is my parcel"
+    options = ["shipping", "billing", "account access"]
 
+    tokens, decision_positions = pack_example(message, options)
+
+    for position, token in enumerate(tokens):
+        print(f"{position:2d}   {token}")
+
+    print("Decision positions:", decision_positions)
 
 if __name__ == "__main__":
     main()
