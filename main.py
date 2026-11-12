@@ -1,5 +1,9 @@
 from data import build_vocab, encode_tokens, pack_example
 
+import mlx.core as mx
+
+from model import TokenEmbedding
+
 def main():
     message = "Where is my parcel"
     options = ["shipping", "billing", "account access"]
@@ -13,6 +17,14 @@ def main():
 
     vocab = build_vocab([tokens])
     token_ids = encode_tokens(tokens, vocab)
+
+    embeddings = TokenEmbedding(vocab_size=len(vocab), model_dim=8)
+    hidden = embeddings(mx.array(token_ids))
+
+    print("Embedding shape:", hidden.shape)
+
+    for positions in decision_positions:
+        print(f"Marker at {position}:", hidden[position].tolist())
 
     print("Token IDs:", token_ids)
     print("IDs at decision positions:", [token_ids[i] for i in decision_positions])
