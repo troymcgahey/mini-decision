@@ -1,4 +1,8 @@
 def pack_example(message, options):
+
+    # message = "Where is my parcel"
+    # options = ["shipping", "billing", "account access"]
+
     tokens = message.lower().split()
     tokens.append("[SEP]")
 
@@ -13,7 +17,7 @@ def pack_example(message, options):
     return tokens, decision_positions
 
 def build_vocab(token_sequences):
-    vocab = {"[PAD]": 0, "[UNK]":1, "[SEP]": 2, "[DECIDE]": 3}
+    vocab = {"[PAD]": 0, "[UNK]": 1, "[SEP]": 2, "[DECIDE]": 3}
 
     for tokens in token_sequences:
         for token in tokens:
