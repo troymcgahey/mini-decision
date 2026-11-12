@@ -1,6 +1,6 @@
 import mlx.nn as nn
 
-class TokenEmbeddings(nn.Module):
+class TokenEmbedding(nn.Module):
 
     def __init__(self, vocab_size, model_dim):
         super().__init__()
