@@ -19,3 +19,21 @@ class TokenEmbedding(nn.Module):
         position_vectors = self.position_table(position_ids)
 
         return token_vectors + position_vectors
+
+class SelfAttention(nn.Module):
+    def __init__(self, model_dim):
+        super().__init__()
+        self.query = nn.Linear(model_dim, model_dim)
+        self.key = nn.Linear(model_dim, model_dim)
+        self.value = nn.Linear(model_dim, model_dim)
+        self.scale = model_dim ** -0.5
+
+    def __call__(self, hidden):
+        queries = self.query(hidden)
+        keys = self.key(hidden)
+        values = self.value(hidden)
+
+        scores = (queries @ keys.T) * self.scale
+        weights = mx.softmax(scores, axis=1)
+        
+        return weights @ values

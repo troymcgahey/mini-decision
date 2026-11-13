@@ -1,4 +1,5 @@
 from data import build_vocab, encode_tokens, pack_example
+from model import SelfAttention, TokenEmbedding
 
 import mlx.core as mx
 
@@ -20,6 +21,14 @@ def main():
 
     embeddings = TokenEmbedding(vocab_size=len(vocab), model_dim=8)
     hidden = embeddings(mx.array(token_ids))
+
+    attention = SelfAttention(model_dim=8)
+    contextual = attention(hidden)
+
+    print("Attention output shape:", contextual.shape)
+    for marker_position in decision_positions:
+        print(f"Contextual marker at {marker_position}:",
+            contextual[marker_position].tolist())
 
     print("Embedding shape:", hidden.shape)
 
