@@ -23,8 +23,9 @@ def main():
 
     print("Embedding shape:", hidden.shape)
 
-    for positions in decision_positions:
-        print(f"Marker at {position}:", hidden[position].tolist())
+    for marker_position in decision_positions:
+        vector = hidden[marker_position]
+        print(f"Marker at {marker_position}:", vector.tolist())
 
     print("Token IDs:", token_ids)
     print("IDs at decision positions:", [token_ids[i] for i in decision_positions])
