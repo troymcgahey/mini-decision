@@ -37,3 +37,13 @@ class SelfAttention(nn.Module):
         weights = mx.softmax(scores, axis=1)
         
         return weights @ values
+
+    def DecisionHead(nn.Module):
+        def __init__(self, model_dim):
+            super().__init__()
+            self.score = nn.Linear(model_dim, 1)
+
+        def __call__(self, contextual, decision_positions):
+            marker_vectors = contextual[decision_positions]
+            
+            return self.score(marker_vectors).squeeze(-1)
