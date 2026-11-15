@@ -19,8 +19,8 @@ def main():
     vocab = build_vocab([tokens])
     token_ids = encode_tokens(tokens, vocab)
 
-    embeddings = TokenEmbedding(vocab_size=len(vocab), model_dim=8)
-    hidden = embeddings(mx.array(token_ids))
+    embedding = TokenEmbedding(vocab_size=len(vocab), model_dim=8)
+    hidden = embedding(mx.array(token_ids))
 
     attention = SelfAttention(model_dim=8)
     contextual = attention(hidden)
@@ -35,6 +35,19 @@ def main():
     for marker_position in decision_positions:
         vector = hidden[marker_position]
         print(f"Marker at {marker_position}:", vector.tolist())
+
+    first_marker = decision_positions[0]
+    edited_ids = token_ids.copy()
+    edited_ids[first_marker + 1] = vocab["billing"]
+
+    edited_hidden = embedding(mx.array(edited_ids))
+    edited_contextual = attention(edited_hidden)
+
+    before = hidden[first_marker] - edited_hidden[first_marker]
+    after = contextual[first_marker] - edited_contextual[first_marker]
+
+    print("Marker change before attention:", mx.max(mx.abs(before)).item())
+    print("Marker change after attention:", mx.max(mx.abs(after)).item())
 
     print("Token IDs:", token_ids)
     print("IDs at decision positions:", [token_ids[i] for i in decision_positions])
