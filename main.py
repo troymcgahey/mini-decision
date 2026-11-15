@@ -9,6 +9,7 @@ def main():
     message = "Where is my parcel"
     options = ["shipping", "billing", "account access"]
 
+    # [DECISION] is the decision token
     tokens, decision_positions = pack_example(message, options)
 
     for position, token in enumerate(tokens):
@@ -17,6 +18,7 @@ def main():
     print("Decision positions:", decision_positions)
 
     vocab = build_vocab([tokens])
+
     token_ids = encode_tokens(tokens, vocab)
 
     embedding = TokenEmbedding(vocab_size=len(vocab), model_dim=8)
