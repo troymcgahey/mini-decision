@@ -1,5 +1,5 @@
 from data import build_vocab, encode_tokens, pack_example
-from model import SelfAttention, TokenEmbedding
+from model import DecisionHead, SelfAttention, TokenEmbedding
 
 import mlx.core as mx
 
@@ -26,6 +26,17 @@ def main():
 
     attention = SelfAttention(model_dim=8)
     contextual = attention(hidden)
+
+    head = DecisionHead(model_dim=8)
+    marker_indices = mx.array(decision_positions)
+    logits = head(contextual, marker_indices)
+    probabilities = mx.softmax(logits, axis=-1)
+
+    print("Logits shape:", logits.shape)
+    for option, logit, probability in zip(
+        options, logits.tolist(), probabilities.tolist()
+    ):
+        print(f"{option:14s} logit={logit:+.4f} probability={probability:.4f}")
 
     print("Attention output shape:", contextual.shape)
     for marker_position in decision_positions:

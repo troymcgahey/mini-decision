@@ -38,12 +38,12 @@ class SelfAttention(nn.Module):
         
         return weights @ values
 
-    def DecisionHead(nn.Module):
-        def __init__(self, model_dim):
-            super().__init__()
-            self.score = nn.Linear(model_dim, 1)
+class DecisionHead(nn.Module):
+    def __init__(self, model_dim):
+        super().__init__()
+        self.score = nn.Linear(model_dim, 1)
 
-        def __call__(self, contextual, decision_positions):
-            marker_vectors = contextual[decision_positions]
+    def __call__(self, contextual, decision_positions):
+        marker_vectors = contextual[decision_positions]
             
-            return self.score(marker_vectors).squeeze(-1)
+        return self.score(marker_vectors).squeeze(-1)
