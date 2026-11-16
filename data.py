@@ -19,11 +19,7 @@ def pack_example(message, options):
 def build_vocab(token_sequences):
     vocab = {"[PAD]": 0, "[UNK]": 1, "[SEP]": 2, "[DECIDE]": 3}
 
-    print(f"token sequence: {token_sequences}")
-
     for tokens in token_sequences:
-
-        print(f"tokens: {tokens}")
         for token in tokens:
             if token not in vocab:
                 vocab[token] = len(vocab)
