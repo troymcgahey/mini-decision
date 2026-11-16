@@ -21,8 +21,17 @@ def main():
 
     token_ids = encode_tokens(tokens, vocab)
 
+    print("Token IDs:", token_ids)
+    print("IDs at decision positions", [token_ids[i] for i in decision_positions])
+    print("Unknown word:", encode_tokens(["unseen"], vocab))
+
     embedding = TokenEmbedding(vocab_size=len(vocab), model_dim=8)
     hidden = embedding(mx.array(token_ids))
+
+    print("Embedding shape:", hidden.shape)
+    for marker_position in decision_positions:
+        vector = hidden[marker_position]
+        print(f"Marker at {marker_position}:", vector.tolist())
 
     attention = SelfAttention(model_dim=8)
     contextual = attention(hidden)
@@ -56,12 +65,6 @@ def main():
         print(f"Contextual marker at {marker_position}:",
             contextual[marker_position].tolist())
 
-    print("Embedding shape:", hidden.shape)
-
-    for marker_position in decision_positions:
-        vector = hidden[marker_position]
-        print(f"Marker at {marker_position}:", vector.tolist())
-
     first_marker = decision_positions[0]
     edited_ids = token_ids.copy()
     edited_ids[first_marker + 1] = vocab["billing"]
@@ -74,10 +77,6 @@ def main():
 
     print("Marker change before attention:", mx.max(mx.abs(before)).item())
     print("Marker change after attention:", mx.max(mx.abs(after)).item())
-
-    print("Token IDs:", token_ids)
-    print("IDs at decision positions:", [token_ids[i] for i in decision_positions])
-    print("Unknown word:", encode_tokens(["unseen"], vocab))
 
 if __name__ == "__main__":
     main()
