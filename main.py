@@ -1,5 +1,6 @@
 from data import build_vocab, encode_tokens, pack_example
 from model import DecisionHead, SelfAttention, TokenEmbedding
+import mlx.nn as nn
 
 import mlx.core as mx
 
@@ -9,7 +10,6 @@ def main():
     message = "Where is my parcel"
     options = ["shipping", "billing", "account access"]
 
-    # [DECISION] is the decision token
     tokens, decision_positions = pack_example(message, options)
 
     for position, token in enumerate(tokens):
@@ -31,6 +31,19 @@ def main():
     marker_indices = mx.array(decision_positions)
     logits = head(contextual, marker_indices)
     probabilities = mx.softmax(logits, axis=-1)
+
+    correct_option = "shipping"
+    target_index = options.index(correct_option)
+    target = mx.array([target_index])
+
+    loss = nn.losses.cross_entropy(
+        logits[None, :],
+        target,
+        reduction="mean",
+    )
+
+    print(f"Target: {correct_option} (index {target_index})")
+    print(f"Loss: {loss.item():.4f}")
 
     print("Logits shape:", logits.shape)
     for option, logit, probability in zip(
