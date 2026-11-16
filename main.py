@@ -65,12 +65,6 @@ def main():
         print(f"Contextual marker at {marker_position}:",
             contextual[marker_position].tolist())
 
-#    print("Embedding shape:", hidden.shape)
-
-#    for marker_position in decision_positions:
-#        vector = hidden[marker_position]
-#        print(f"Marker at {marker_position}:", vector.tolist())
-
     first_marker = decision_positions[0]
     edited_ids = token_ids.copy()
     edited_ids[first_marker + 1] = vocab["billing"]
