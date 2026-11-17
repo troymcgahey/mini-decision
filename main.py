@@ -1,82 +1,107 @@
 from data import build_vocab, encode_tokens, pack_example
-from model import DecisionHead, SelfAttention, TokenEmbedding
+from model import DecisionModel
+
 import mlx.nn as nn
-
 import mlx.core as mx
+import mlx.optimizers as optim
+import random
 
-from model import TokenEmbedding
-
-def main():
-    message = "Where is my parcel"
-    options = ["shipping", "billing", "account access"]
-
-    tokens, decision_positions = pack_example(message, options)
-
-    for position, token in enumerate(tokens):
-        print(f"{position:2d}   {token}")
-
-    print("Decision positions:", decision_positions)
-
-    vocab = build_vocab([tokens])
-
-    token_ids = encode_tokens(tokens, vocab)
-
-    print("Token IDs:", token_ids)
-    print("IDs at decision positions", [token_ids[i] for i in decision_positions])
-    print("Unknown word:", encode_tokens(["unseen"], vocab))
-
-    embedding = TokenEmbedding(vocab_size=len(vocab), model_dim=8)
-    hidden = embedding(mx.array(token_ids))
-
-    print("Embedding shape:", hidden.shape)
-    for marker_position in decision_positions:
-        vector = hidden[marker_position]
-        print(f"Marker at {marker_position}:", vector.tolist())
-
-    attention = SelfAttention(model_dim=8)
-    contextual = attention(hidden)
-
-    head = DecisionHead(model_dim=8)
-    marker_indices = mx.array(decision_positions)
-    logits = head(contextual, marker_indices)
-    probabilities = mx.softmax(logits, axis=-1)
-
-    correct_option = "shipping"
-    target_index = options.index(correct_option)
-    target = mx.array([target_index])
-
-    loss = nn.losses.cross_entropy(
-        logits[None, :],
-        target,
-        reduction="mean",
+def loss_fn(model, token_ids, marker_indices, target):
+    logits = model(token_ids, marker_indices)
+    return nn.losses.cross_entropy(
+            logits[None, :], target, reduction="mean"
     )
 
-    print(f"Target: {correct_option} (index {target_index})")
-    print(f"Loss: {loss.item():.4f}")
+def main():
 
-    print("Logits shape:", logits.shape)
-    for option, logit, probability in zip(
-        options, logits.tolist(), probabilities.tolist()
-    ):
-        print(f"{option:14s} logit={logit:+.4f} probability={probability:.4f}")
+    mx.random.seed(42)
+    rng = random.Random(42)
 
-    print("Attention output shape:", contextual.shape)
-    for marker_position in decision_positions:
-        print(f"Contextual marker at {marker_position}:",
-            contextual[marker_position].tolist())
+    labels = ["shipping", "billing", "account access"]
+    training_rows = [
+        ("where is my parcel", "shipping"),
+        ("my parcel is late", "shipping"),
+        ("where is my refund", "billing"),
+        ("my refund is late", "billing"),
+        ("help me reset my password", "account access"),
+        ("my password does not work", "account access"),
+    ]
 
-    first_marker = decision_positions[0]
-    edited_ids = token_ids.copy()
-    edited_ids[first_marker + 1] = vocab["billing"]
+    vocab = build_vocab([
+        pack_example(message, labels)[0]
+        for message, _ in training_rows
+    ])
 
-    edited_hidden = embedding(mx.array(edited_ids))
-    edited_contextual = attention(edited_hidden)
+    model = DecisionModel(vocab_size=len(vocab), model_dim=8)
+    optimizer = optim.Adam(learning_rate=0.01)
+    loss_and_grad = nn.value_and_grad(model, loss_fn)
 
-    before = hidden[first_marker] - edited_hidden[first_marker]
-    after = contextual[first_marker] - edited_contextual[first_marker]
+    for epoch in range(1, 101):
+        rng.shuffle(training_rows)
+        total_loss = 0.0
 
-    print("Marker change before attention:", mx.max(mx.abs(before)).item())
-    print("Marker change after attention:", mx.max(mx.abs(after)).item())
+        for message, correct_label in training_rows:
+            options = rng.sample(labels, len(labels))
+            tokens, positions = pack_example(message, options)
+
+            token_ids = mx.array(encode_tokens(tokens, vocab))
+            marker_indices = mx.array(positions)
+            target = mx.array([options.index(correct_label)])
+
+            loss, grads = loss_and_grad(model, token_ids, marker_indices, target)
+            optimizer.update(model, grads)
+            mx.eval(loss, model.parameters(), optimizer.state)
+            total_loss += loss.item()
+
+        if epoch == 1 or epoch % 20 == 0:
+            mean_loss = total_loss / len(training_rows)
+            print(f"Epoch {epoch:3d} | mean loss: {mean_loss:4f}")
+
+    options = ["billing", "account access", "shipping"]
+    message = "my parcel does not work"
+    tokens, positions = pack_example(message, options)
+    logits = model(
+        mx.array(encode_tokens(tokens, vocab)),
+        mx.array(positions),
+    )
+
+    print(f"\nHeld-out message: {message}")
+    for option, probability in zip(options, mx.softmax(logits, axis=-1).tolist()):
+        print(f"{option:14s} {probability:.4f}")
+
+#    message = "Where is my parcel"
+#    options = ["shipping", "billing", "account access"]
+#
+#    tokens, decision_positions = pack_example(message, options)
+#
+#    for position, token in enumerate(tokens):
+#        print(f"{position:2d}   {token}")
+#
+#    vocab = build_vocab([tokens])
+#
+#    token_ids = mx.array(encode_tokens(tokens, vocab))
+#
+#    print("Token_ids:", token_ids)
+#
+#    marker_indices = mx.array(decision_positions)
+#    target = mx.array([options.index("shipping")])
+#
+#    model = DecisionModel(vocab_size=len(vocab), model_dim=8)
+#    optimizer = optim.Adam(learning_rate=0.01)
+#    loss_and_grad = nn.value_and_grad(model, loss_fn)
+#
+#    for step in range(1, 101):
+#        loss, grads = loss_and_grad(model, token_ids, marker_indices, target)
+#        optimizer.update(model, grads)
+#        mx.eval(loss, model.parameters(), optimizer.state)
+#
+#        if step == 1 or step % 20 == 0:
+#          print(f"Step {step:3d} | loss before update: {loss.item():.4f}")
+#
+#    logits = model(token_ids, marker_indices)
+#    probabilities = mx.softmax(logits, axis=-1)
+#    for option, probability in zip(options, probabilities.tolist()):
+#          print(f"{option:14s} {probability:.4f}")
 
 if __name__ == "__main__":
     main()
