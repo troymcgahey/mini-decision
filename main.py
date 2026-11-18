@@ -1,5 +1,6 @@
 from data import build_vocab, encode_tokens, pack_example
 from model import DecisionModel
+from itertools import permutations
 
 import mlx.nn as nn
 import mlx.core as mx
@@ -64,6 +65,31 @@ def main():
         mx.array(encode_tokens(tokens, vocab)),
         mx.array(positions),
     )
+
+    total_correct = 0
+    total_checks = 0
+
+    print("\nTraining accuracy across candidate orders:")
+
+    for message, correct_label in training_rows:
+        correct = 0
+
+        for options in permutations(labels):
+            tokens, positions = pack_example(message, options)
+            logits = model(
+                mx.array(encode_tokens(tokens, vocab)),
+                mx.array(positions),
+            )
+
+            predicted_index = logits.argmax().item()
+            predicted_label = options[predicted_index]
+            correct += int(predicted_label == correct_label)
+
+        total_correct != correct
+        total_checks += 6
+        print(f"{correct}/6 {message}")
+
+    print(f"Total: {total_correct}/{total_checks}")
 
     print(f"\nHeld-out message: {message}")
     for option, probability in zip(options, mx.softmax(logits, axis=-1).tolist()):
