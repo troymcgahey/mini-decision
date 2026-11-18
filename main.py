@@ -1,10 +1,12 @@
 from data import build_vocab, encode_tokens, pack_example
 from model import DecisionModel
+from itertools import permutations
 
 import mlx.nn as nn
 import mlx.core as mx
 import mlx.optimizers as optim
 import random
+import inspect
 
 def loss_fn(model, token_ids, marker_indices, target):
     logits = model(token_ids, marker_indices)
@@ -33,10 +35,14 @@ def main():
     ])
 
     model = DecisionModel(vocab_size=len(vocab), model_dim=8)
-    optimizer = optim.Adam(learning_rate=0.01)
+
+    print("Model file:", inspect.getfile(DecisionModel))
+    print(inspect.getsource(DecisionModel))
+
+    optimizer = optim.Adam(learning_rate=0.001)
     loss_and_grad = nn.value_and_grad(model, loss_fn)
 
-    for epoch in range(1, 101):
+    for epoch in range(1, 501):
         rng.shuffle(training_rows)
         total_loss = 0.0
 
@@ -53,7 +59,7 @@ def main():
             mx.eval(loss, model.parameters(), optimizer.state)
             total_loss += loss.item()
 
-        if epoch == 1 or epoch % 20 == 0:
+        if epoch == 1 or epoch % 100 == 0:
             mean_loss = total_loss / len(training_rows)
             print(f"Epoch {epoch:3d} | mean loss: {mean_loss:4f}")
 
@@ -64,6 +70,31 @@ def main():
         mx.array(encode_tokens(tokens, vocab)),
         mx.array(positions),
     )
+
+    total_correct = 0
+    total_checks = 0
+
+    print("\nTraining accuracy across candidate orders:")
+
+    for message, correct_label in training_rows:
+        correct = 0
+
+        for options in permutations(labels):
+            tokens, positions = pack_example(message, options)
+            logits = model(
+                mx.array(encode_tokens(tokens, vocab)),
+                mx.array(positions),
+            )
+
+            predicted_index = logits.argmax().item()
+            predicted_label = options[predicted_index]
+            correct += int(predicted_label == correct_label)
+
+        total_correct += correct
+        total_checks += 6
+        print(f"{correct}/6 {message}")
+
+    print(f"Total: {total_correct}/{total_checks}")
 
     print(f"\nHeld-out message: {message}")
     for option, probability in zip(options, mx.softmax(logits, axis=-1).tolist()):
