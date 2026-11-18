@@ -6,6 +6,7 @@ import mlx.nn as nn
 import mlx.core as mx
 import mlx.optimizers as optim
 import random
+import inspect
 
 def loss_fn(model, token_ids, marker_indices, target):
     logits = model(token_ids, marker_indices)
@@ -34,10 +35,14 @@ def main():
     ])
 
     model = DecisionModel(vocab_size=len(vocab), model_dim=8)
-    optimizer = optim.Adam(learning_rate=0.01)
+
+    print("Model file:", inspect.getfile(DecisionModel))
+    print(inspect.getsource(DecisionModel))
+
+    optimizer = optim.Adam(learning_rate=0.001)
     loss_and_grad = nn.value_and_grad(model, loss_fn)
 
-    for epoch in range(1, 101):
+    for epoch in range(1, 501):
         rng.shuffle(training_rows)
         total_loss = 0.0
 
@@ -54,7 +59,7 @@ def main():
             mx.eval(loss, model.parameters(), optimizer.state)
             total_loss += loss.item()
 
-        if epoch == 1 or epoch % 20 == 0:
+        if epoch == 1 or epoch % 100 == 0:
             mean_loss = total_loss / len(training_rows)
             print(f"Epoch {epoch:3d} | mean loss: {mean_loss:4f}")
 
@@ -85,7 +90,7 @@ def main():
             predicted_label = options[predicted_index]
             correct += int(predicted_label == correct_label)
 
-        total_correct != correct
+        total_correct += correct
         total_checks += 6
         print(f"{correct}/6 {message}")
 

@@ -45,17 +45,22 @@ class DecisionHead(nn.Module):
 
     def __call__(self, contextual, decision_positions):
         marker_vectors = contextual[decision_positions]
-            
+
         return self.score(marker_vectors).squeeze(-1)
 
 class DecisionModel(nn.Module):
     def __init__(self, vocab_size, model_dim):
         super().__init__()
         self.embedding = TokenEmbedding(vocab_size, model_dim)
-        self.attention = SelfAttention(model_dim)
+        self.attention1 = SelfAttention(model_dim)
+        self.attention2 = SelfAttention(model_dim)
         self.head = DecisionHead(model_dim)
 
     def __call__(self, token_ids, marker_indices):
         hidden = self.embedding(token_ids)
-        contextual = self.attention(hidden)
-        return self.head(contextual, marker_indices)
+
+        hidden = hidden + self.attention1(hidden)
+        hidden = hidden + self.attention2(hidden)
+
+        return self.head(hidden, marker_indices)
+
