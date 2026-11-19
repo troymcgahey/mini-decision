@@ -100,6 +100,25 @@ def main():
     for option, probability in zip(options, mx.softmax(logits, axis=-1).tolist()):
         print(f"{option:14s} {probability:.4f}")
 
+    message = "where is my refund"
+
+    print(f"\n Candidate-order check: {message}")
+
+    for options in permutations(labels):
+        tokens, positions = pack_example(message, options)
+
+        logits = model(
+            mx.array(encode_tokens(tokens,vocab)),
+            mx.array(positions),
+        )
+        probabilities = mx.softmax(logits, axis=-1).tolist()
+
+        results = [
+            f"{label}={probability:.3f}"
+            for label, probability in zip(options, probabilities)
+        ]
+        print(" | ".join(results))
+
 #    message = "Where is my parcel"
 #    options = ["shipping", "billing", "account access"]
 #
